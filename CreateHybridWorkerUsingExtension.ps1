@@ -16,7 +16,7 @@ param(
         [Parameter(Mandatory=$false, Position=7)]
         [string] $SignatureValidationEnabled = $false,
         [Parameter(Mandatory=$false, Position=8)]
-        [string] $IsNonAzure = $false        
+        [bool] $IsNonAzure = $false        
 )
 
 function Login-Account {
@@ -65,7 +65,8 @@ function Get-HybridWorkerRegUrl {
     try{
         $access_token = Get-AccessToken
         $uri = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AutomationAccountResourceGroupName/providers/Microsoft.Automation/automationAccounts/"+$AccountName+"?api-version=2021-06-22"
-        $automationaccountInfo = Invoke-GetRestMethod -Uri $uri -Token $access_token -ContentType "application/json"
+        
+        $automationaccountInfo = Invoke-GetRestMethod -Uri $uri -Token $access_token -ContentType "application/json" -Verbose
         return $($automationaccountInfo.properties.automationHybridServiceUrl)
     }
     catch{
@@ -85,6 +86,24 @@ function Invoke-PutRestMethod {
         $Headers = @{}
         $Headers.Add("Authorization", "bearer " + " " + "$($Token)")
         return Invoke-RestMethod -Uri $Uri -Method PUT -ContentType $ContentType -Headers $Headers -Body $Body
+    }
+    catch {
+        Write-Error -Message $_.Exception
+    }
+}
+
+function Invoke-PostRestMethod {
+    param (
+        $Uri,
+        $Body,
+        $Token,
+        $ContentType
+    )
+    # Write-Verbose "Draft runbooks" -verbose
+    try {
+        $Headers = @{}
+        $Headers.Add("Authorization", "bearer " + " " + "$($Token)")
+        return Invoke-RestMethod -Uri $Uri -Method POST -ContentType $ContentType -Headers $Headers -Body $Body
     }
     catch {
         Write-Error -Message $_.Exception
@@ -158,7 +177,10 @@ function Add-NewWorkerToWorkerGroup{
         Login-Account -SubscriptionId $SubscriptionId
         $access_token = Get-AccessToken 
 
-        $uri = Get-VmResourceId -VmResourceGroupName $VmResourceGroupName -VmName $VmName
+        $guid = New-Guid
+        
+        $uri = "https://management.azure.com/subscriptions/$SubscriptionId/resourceGroups/$AutomationAccountResourceGroupName/providers/Microsoft.Automation/automationAccounts/$AccountName/hybridRunbookWorkerGroups/$WorkerGroupName/hybridRunbookWorkers/"+$guid+"?api-version=2021-06-22"
+        $vmResourceId = Get-VmResourceId -VmResourceGroupName $VmResourceGroupName -VmName $VmName
 
         
         $body = @"
@@ -204,6 +226,7 @@ function Get-VmLocation {
     return $($vm.Location) 
 }
 
+
 function Enable-HybridWorkerExtension {
     [CmdletBinding()]
     param(
@@ -224,13 +247,13 @@ function Enable-HybridWorkerExtension {
         [Parameter(Mandatory=$false, Position=7)]
         [string] $SignatureValidationEnabled = $false,
         [Parameter(Mandatory=$false, Position=8)]
-        [string] $IsNonAzure = $false       
+        [bool] $IsNonAzure = $false       
     )
     Write-Output "Enabling extension on the Hybrid worker"
 
     Login-Account -SubscriptionId $SubscriptionId
     
-    $regisrationUri = Get-HybridWorkerRegUrl
+    $regisrationUri = Get-HybridWorkerRegUrl -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName
     Write-Output "Registration URL received is : "$regisrationUri
 
     $settings = @{
@@ -290,7 +313,7 @@ function Enable-HybridWorkerExtensionE2E {
         [Parameter(Mandatory=$false, Position=7)]
         [string] $SignatureValidationEnabled = $false,
         [Parameter(Mandatory=$false, Position=8)]
-        [string] $IsNonAzure = $false        
+        [bool] $IsNonAzure = $false        
     )
 
     Write-Output "Creating New Hybrid Worker Group. WorkerGroupName : $WorkerGroupName, AutomationAccount : $AccountName"
@@ -300,7 +323,7 @@ function Enable-HybridWorkerExtensionE2E {
     Add-NewWorkerToWorkerGroup -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName
 
     Write-Output "Enabling Identity for the VM. VMName: $VmName, VMResourceGroup: $VmResourceGroupName"
-    Enable-Identity -VmResourceGroupName $VmResourceGroupName -VmName $VmName
+    Enable-VMIdentity -VmResourceGroupName $VmResourceGroupName -VmName $VmName
 
     Write-Output "Enabling Hybrid Worker Extension on VMType: $OsType"
     Enable-HybridWorkerExtension -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName -OsType $OsType -SignatureValidationEnabled $SignatureValidationEnabled -IsNonAzure $IsNonAzure
