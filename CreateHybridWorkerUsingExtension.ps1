@@ -294,17 +294,17 @@ function Enable-HybridWorkerExtensionE2E {
     )
 
     Write-Output "Creating New Hybrid Worker Group. WorkerGroupName : $WorkerGroupName, AutomationAccount : $AccountName"
-    Create-NewHybridWorkerGroup -SubscriptionId $SubscriptionId -ResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName
+    Create-NewHybridWorkerGroup -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName
 
     Write-Output "Adding a new worker to the Worker Group. VMName: $VmName, VMResourceGroup: $VmResourceGroupName"
-    Add-NewWorkerToWorkerGroup -SubscriptionId $SubscriptionId -ResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName
+    Add-NewWorkerToWorkerGroup -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName
 
     Write-Output "Enabling Identity for the VM. VMName: $VmName, VMResourceGroup: $VmResourceGroupName"
     Enable-Identity -VmResourceGroupName $VmResourceGroupName -VmName $VmName
 
     Write-Output "Enabling Hybrid Worker Extension on VMType: $OsType"
-    Enable-HybridWorkerExtension -SubscriptionId $SubscriptionId -ResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName -OsType $OsType -SignatureValidationEnabled $SignatureValidationEnabled -IsNonAzure $IsNonAzure
+    Enable-HybridWorkerExtension -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName -OsType $OsType -SignatureValidationEnabled $SignatureValidationEnabled -IsNonAzure $IsNonAzure
 }
 
-Enable-HybridWorkerExtensionE2E -SubscriptionId $SubscriptionId -ResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName -OsType $OsType -SignatureValidationEnabled $SignatureValidationEnabled -IsNonAzure $IsNonAzure
+Enable-HybridWorkerExtensionE2E -SubscriptionId $SubscriptionId -AutomationAccountResourceGroupName $AutomationAccountResourceGroupName -AccountName $AccountName -WorkerGroupName $WorkerGroupName -VmResourceGroup $VmResourceGroupName -VmName $VmName -OsType $OsType -SignatureValidationEnabled $SignatureValidationEnabled -IsNonAzure $IsNonAzure
 
